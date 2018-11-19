@@ -71,7 +71,7 @@ $app->post('/employees', function ($request, $response, $args) {
     $res = $con->query("INSERT INTO employee(first_name, last_name) VALUES ('$firstName','$lastName')");
     if ($res) {
         $employee = [
-            'id' => $con->insert_id ,
+            'id' => $con->insert_id,
             'first_name' => $firstName,
             'last_name' => $lastName
         ];
@@ -164,11 +164,76 @@ $app->post('/tasks', function ($request, $response, $args) {
     } else {
         return $response->withStatus(400);
     }
+});
 
+// list all tasks
+
+$app->get('/tasks', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $_tasks = $con->query("SELECT id,date,title,pcs_count FROM task WHERE status='1'");
+    $tasks = [];
+
+    while ($task = $_tasks->fetch_assoc())
+        $tasks[] = $task;
+
+    return $response->withStatus(200)->withJson(['tasks' => $tasks]);
 
 });
 
+// get task detail
 
+$app->get('/tasks/{id}', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $_task = $con->query("SELECT id,date,title,pcs_count FROM task WHERE status='1' AND id='$id'");
+
+    if ($_task->num_rows == 1)
+        return $response->withStatus(200)->withJson($_task->fetch_assoc());
+    else
+        return $response->withStatus(204);
+});
+
+// update task
+$app->post('/tasks/{id}', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $date = $request->getParsedBodyParam('date');
+    $title = $request->getParsedBodyParam('title');
+    $pcsCount = $request->getParsedBodyParam('pcs_count');
+
+    $res = $con->query("UPDATE task SET date = '$date', title = '$title', pcs_count='$pcsCount' WHERE id='$id' AND status='1'");
+
+    if ($res) {
+        $task = [
+            'id' => $id,
+            'date' => $date,
+            'title' => $title,
+            'pcs_count' => $pcsCount
+        ];
+        return $response->withStatus(200)->withJson($task);
+    } else {
+        return $response->withStatus(400);
+    }
+
+
+});
 
 try {
     $app->run();
