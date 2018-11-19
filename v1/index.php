@@ -69,16 +69,38 @@ $app->post('/employee', function ($request, $response, $args) {
     $lastName = $request->getParsedBodyParam('last_name');
 
     $res = $con->query("INSERT INTO employee(first_name, last_name) VALUES ('$firstName','$lastName')");
-    if($res){
+    if ($res) {
         return $response->withStatus(201);
-    }else{
+    } else {
         return $response->withStatus(400);
     }
 
 });
 
 // edting an employee
+$app->post('/employee/{id}', function ($request, $response, $args) {
+    global $con;
 
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+    $id = $args["id"];
+    $firstName = $request->getParsedBodyParam('first_name');
+    $lastName = $request->getParsedBodyParam('last_name');
+
+    $res = $con->query("UPDATE employee SET first_name='$firstName', last_name='$lastName' WHERE id='$id'");
+    if ($res) {
+        $employee = [
+            'id' => $id,
+            'first_name' => $firstName,
+            'last_name' => $lastName
+        ];
+        return $response->withStatus(200)->withJson($employee);
+    } else {
+        return $response->withStatus(400);
+    }
+
+});
 
 
 try {
