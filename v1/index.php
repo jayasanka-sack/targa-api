@@ -2,11 +2,15 @@
 session_start();
 require '../vendor/autoload.php';
 
+use Targa\Middleware\Authentication as TargaAuth;
+
 $app = new \Slim\App([
     'settings' => [
         'displayErrorDetails' => true
     ]
 ]);
+
+$app->add(new TargaAuth());
 
 
 try {
