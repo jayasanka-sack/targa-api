@@ -231,7 +231,25 @@ $app->post('/tasks/{id}', function ($request, $response, $args) {
     } else {
         return $response->withStatus(400);
     }
+});
 
+$app->delete('/tasks/{id}', function ($request, $response, $args) {
+
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $res = $con->query("UPDATE task SET status='0' WHERE id='$id'");
+
+    if ($res) {
+        return $response->withStatus(204);
+    } else {
+        return $response->withStatus(400);
+    }
 
 });
 
