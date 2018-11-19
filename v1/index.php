@@ -58,7 +58,7 @@ $app->get('/logout', function ($request, $response, $args) {
 
 // adding a new employee
 
-$app->post('/employee', function ($request, $response, $args) {
+$app->post('/employees', function ($request, $response, $args) {
     global $con;
 
     if ($request->getAttribute('logged') == false) {
@@ -70,7 +70,12 @@ $app->post('/employee', function ($request, $response, $args) {
 
     $res = $con->query("INSERT INTO employee(first_name, last_name) VALUES ('$firstName','$lastName')");
     if ($res) {
-        return $response->withStatus(201);
+        $employee = [
+            'id' => $con->insert_id ,
+            'first_name' => $firstName,
+            'last_name' => $lastName
+        ];
+        return $response->withStatus(201)->withJson($employee);
     } else {
         return $response->withStatus(400);
     }
@@ -78,7 +83,7 @@ $app->post('/employee', function ($request, $response, $args) {
 });
 
 // edting an employee
-$app->post('/employee/{id}', function ($request, $response, $args) {
+$app->post('/employees/{id}', function ($request, $response, $args) {
     global $con;
 
     if ($request->getAttribute('logged') == false) {
@@ -102,7 +107,7 @@ $app->post('/employee/{id}', function ($request, $response, $args) {
 });
 
 // deleting an employee
-$app->delete('/employee/{id}', function ($request, $response, $args) {
+$app->delete('/employees/{id}', function ($request, $response, $args) {
     global $con;
 
     if ($request->getAttribute('logged') == false) {
@@ -116,6 +121,51 @@ $app->delete('/employee/{id}', function ($request, $response, $args) {
     } else {
         return $response->withStatus(400);
     }
+});
+
+// list Employees
+$app->get('/employees', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $_employees = $con->query("SELECT * FROM employee WHERE status='1'");
+    $employees = [];
+    while ($employee = $_employees->fetch_assoc())
+        $employees[] = $employee;
+
+    return $response->withStatus(200)->withJson(['employees' => $employees]);
+
+});
+
+// add new task
+$app->post('/tasks', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $date = $request->getParsedBodyParam('date');
+    $title = $request->getParsedBodyParam('title');
+    $pcsCount = $request->getParsedBodyParam('pcs_count');
+
+    $res = $con->query("INSERT INTO task(date, title, pcs_count) VALUES ('$date', '$title', '$pcsCount')");
+    if ($res) {
+        $task = [
+            'id' => $con->insert_id,
+            'date' => $date,
+            'title' => $title,
+            'pcs_count' => $pcsCount
+        ];
+        return $response->withStatus(201)->withJson($task);
+    } else {
+        return $response->withStatus(400);
+    }
+
+
 });
 
 
