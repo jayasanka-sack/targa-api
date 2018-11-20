@@ -378,6 +378,27 @@ $app->post('/jobs/{job_id}/counts', function ($request, $response, $args) {
     }
 });
 
+// delete a hour count
+
+$app->delete('/counts/{id}', function ($request, $response, $args) {
+
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $res = $con->query("DELETE FROM hour_count WHERE id='$id'");
+
+    if ($res) {
+        return $response->withStatus(204);
+    } else {
+        return $response->withStatus(400);
+    }
+});
+
 
 try {
     $app->run();
