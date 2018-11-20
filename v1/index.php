@@ -233,6 +233,8 @@ $app->post('/tasks/{id}', function ($request, $response, $args) {
     }
 });
 
+// delete a task
+
 $app->delete('/tasks/{id}', function ($request, $response, $args) {
 
     global $con;
@@ -280,8 +282,6 @@ $app->post('/tasks/{task_id}/jobs', function ($request, $response, $args) {
     }
 });
 
-
-
 // edit a job
 
 $app->post('/jobs/{id}', function ($request, $response, $args) {
@@ -307,6 +307,77 @@ $app->post('/jobs/{id}', function ($request, $response, $args) {
         return $response->withStatus(400);
     }
 });
+
+// list all jobs in a task
+
+$app->get('/tasks/{task_id}/jobs', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $task_id = $args['task_id'];
+
+    $_jobs = $con->query("SELECT id,task_id,title,pph FROM job WHERE status='1' AND task_id='$task_id'");
+    $jobs = [];
+    while ($job = $_jobs->fetch_assoc())
+        $jobs[] = $job;
+
+    return $response->withStatus(200)->withJson($jobs);
+});
+
+// delete a job
+
+$app->delete('/jobs/{id}', function ($request, $response, $args) {
+
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $res = $con->query("UPDATE job SET status='0' WHERE id='$id'");
+
+    if ($res) {
+        return $response->withStatus(204);
+    } else {
+        return $response->withStatus(400);
+    }
+});
+
+// insert count
+
+$app->post('/jobs/{job_id}/counts', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $job_id = $args['job_id'];
+    $employee_id = $request->getParsedBodyParam('employee_id');
+    $jobHour = $request->getParsedBodyParam('job_hour');
+    $pcs = $request->getParsedBodyParam('pcs');
+
+    $res = $con->query("INSERT INTO hour_count(employee_id, job_id, job_hour,pcs) VALUES ('$employee_id', '$job_id', '$jobHour', '$pcs')");
+    if ($res) {
+        $count = [
+            'id' => $con->insert_id,
+            'employee_id' => $employee_id,
+            'job_id' => $job_id,
+            'job_hour' => $jobHour,
+            'pcs' => $pcs
+        ];
+        return $response->withStatus(201)->withJson($count);
+    } else {
+        echo "INSERT INTO hour_count(employee_id, job_id, job_hour,pcs) VALUES ('$employee_id', '$job_id', '$jobHour', '$pcs')";
+        return $response->withStatus(400);
+    }
+});
+
 
 try {
     $app->run();
