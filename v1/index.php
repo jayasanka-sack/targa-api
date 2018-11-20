@@ -280,6 +280,34 @@ $app->post('/tasks/{task_id}/jobs', function ($request, $response, $args) {
     }
 });
 
+
+
+// edit a job
+
+$app->post('/jobs/{id}', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+    $title = $request->getParsedBodyParam('title');
+    $pph = $request->getParsedBodyParam('pph');
+
+    $res = $con->query("UPDATE job SET title='$title', pph='$pph' WHERE id='$id' AND status='1'");
+    if ($res) {
+        $job = [
+            'id' => $id,
+            'title' => $title,
+            'pph' => $pph
+        ];
+        return $response->withStatus(200)->withJson($job);
+    } else {
+        return $response->withStatus(400);
+    }
+});
+
 try {
     $app->run();
 } catch (\Slim\Exception\MethodNotAllowedException $e) {
