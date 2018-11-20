@@ -373,7 +373,6 @@ $app->post('/jobs/{job_id}/counts', function ($request, $response, $args) {
         ];
         return $response->withStatus(201)->withJson($count);
     } else {
-        echo "INSERT INTO hour_count(employee_id, job_id, job_hour,pcs) VALUES ('$employee_id', '$job_id', '$jobHour', '$pcs')";
         return $response->withStatus(400);
     }
 });
@@ -399,6 +398,87 @@ $app->delete('/counts/{id}', function ($request, $response, $args) {
     }
 });
 
+// get basic stats of a task
+
+$app->get('/tasks/{id}/percentage', function ($request, $response, $args) {
+
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $_result = $con->query("SELECT SUM(t.pcs_count) as total_pcs, SUM(h.pcs) as pcs, COUNT(j.id) AS job_count FROM task t INNER JOIN job j on t.id = j.task_id INNER JOIN hour_count h ON j.id = h.job_id INNER JOIN employee e on h.employee_id = e.id WHERE t.id='$id' AND t.status='1' AND j.status='1' AND e.status='1'");
+
+    $total = 0;
+    $completed = 0;
+
+    $completedPercentage = 0;
+
+    if ($_result->num_rows == 1) {
+        $result = $_result->fetch_assoc();
+        $total = $result['total_pcs'] * $result['job_count'];
+        $completed = $result['pcs'];
+
+        $completedPercentage = $completed / $total * 100;
+    }
+
+    $payload = [
+        'numeric' => [
+            'total' => $total,
+            'completed' => intval($completed)
+        ],
+        'percentage' => [
+            'completed' => $completedPercentage,
+            'remaining' => 100 - $completedPercentage
+        ]
+    ];
+
+    return $response->withStatus(200)->withJson($payload);
+
+});
+
+// get hour counts by employee
+$app->get('/tasks/{id}/hour-count-by-employee', function ($request, $response, $args) {
+
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $id = $args['id'];
+
+    $employees = $con->query("SELECT employee_id, first_name, last_name FROM task t INNER JOIN job j on t.id = j.task_id INNER JOIN hour_count h ON j.id = h.job_id INNER JOIN employee e on h.employee_id = e.id WHERE t.id='$id' AND t.status='1' AND j.status='1' AND e.status='1' GROUP BY e.id");
+    $hourCounts = [];
+    while ($_employee = $employees->fetch_assoc()){
+        $employee = $_employee;
+        $employeeId = $_employee["employee_id"];
+        $totalPcs = 0;
+        $totalPoints = 0;
+        $_counts = $con->query("SELECT j.id, j.title, j.pph, h.job_hour, h.pcs FROM task t INNER JOIN job j on t.id = j.task_id INNER JOIN hour_count h ON j.id = h.job_id INNER JOIN employee e on h.employee_id = e.id WHERE t.id='$id' AND t.status='1' AND j.status='1' AND e.id='$employeeId'");
+
+        while ($count = $_counts->fetch_assoc()){
+            $counts = $count;
+            $points = $counts["pph"]*$counts["pcs"]/100;
+            $counts["pph"] = intval($count["pph"]);
+            $counts["pcs"] = intval($count["pcs"]);
+            $counts["points"] = $points;
+            $employee["counts"][] = $counts;
+
+            $totalPcs+= $count["pcs"];
+            $totalPoints+= $points;
+
+        }
+        $employee["total_pcs"] = $totalPcs;
+        $employee["total_points"] = $totalPoints;
+        $hourCounts[] = $employee;
+    }
+    return $response->withStatus(200)->withJson(['hour_counts'=>$hourCounts]);
+
+});
 
 try {
     $app->run();
