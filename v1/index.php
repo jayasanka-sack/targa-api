@@ -253,6 +253,33 @@ $app->delete('/tasks/{id}', function ($request, $response, $args) {
 
 });
 
+// insert a job
+
+$app->post('/tasks/{task_id}/jobs', function ($request, $response, $args) {
+    global $con;
+
+    if ($request->getAttribute('logged') == false) {
+        return $response->withStatus(403);
+    }
+
+    $task_id = $args['task_id'];
+    $title = $request->getParsedBodyParam('title');
+    $pph = $request->getParsedBodyParam('pph');
+
+    $res = $con->query("INSERT INTO job(task_id, title, pph) VALUES ('$task_id','$title','$pph')");
+    if ($res) {
+        $job = [
+            'id' => $con->insert_id,
+            'task_id' => $task_id,
+            'title' => $title,
+            'pph' => $pph
+        ];
+        return $response->withStatus(201)->withJson($job);
+    } else {
+        return $response->withStatus(400);
+    }
+});
+
 try {
     $app->run();
 } catch (\Slim\Exception\MethodNotAllowedException $e) {
