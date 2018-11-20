@@ -43,7 +43,7 @@ $app->post('/login', function ($request, $response, $args) {
 
 $app->get('/user-status', function ($request, $response, $args) {
     if ($request->getAttribute('logged') == true) {
-        return $response->withStatus(200);
+        return $response->withStatus(200)->withJson(['logged' => true]);
     } else {
         return $response->withStatus(403);
     }
