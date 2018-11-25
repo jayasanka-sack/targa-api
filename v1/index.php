@@ -324,7 +324,7 @@ $app->get('/tasks/{task_id}/jobs', function ($request, $response, $args) {
     while ($job = $_jobs->fetch_assoc())
         $jobs[] = $job;
 
-    return $response->withStatus(200)->withJson($jobs);
+    return $response->withStatus(200)->withJson(['jobs'=>$jobs]);
 });
 
 // delete a job
