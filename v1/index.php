@@ -350,14 +350,14 @@ $app->delete('/jobs/{id}', function ($request, $response, $args) {
 
 // insert count
 
-$app->post('/jobs/{job_id}/counts', function ($request, $response, $args) {
+$app->post('/counts', function ($request, $response, $args) {
     global $con;
 
     if ($request->getAttribute('logged') == false) {
         return $response->withStatus(403);
     }
 
-    $job_id = $args['job_id'];
+    $job_id = $request->getParsedBodyParam('job_id');
     $employee_id = $request->getParsedBodyParam('employee_id');
     $jobHour = $request->getParsedBodyParam('job_hour');
     $pcs = $request->getParsedBodyParam('pcs');
@@ -422,8 +422,8 @@ $app->get('/tasks/{id}/percentage', function ($request, $response, $args) {
         $total = $result['total_pcs'] * $result['job_count'];
         $completed = $result['pcs'];
 
-        $completedPercentage = $completed / $total * 100;
-    }
+    $completedPercentage = floatval(number_format((float)($completed / $total * 100), 2, '.', ''));
+        }
 
     $payload = [
         'numeric' => [
@@ -458,7 +458,7 @@ $app->get('/tasks/{id}/hour-count-by-employee', function ($request, $response, $
         $employeeId = $_employee["employee_id"];
         $totalPcs = 0;
         $totalPoints = 0;
-        $_counts = $con->query("SELECT j.id, j.title, j.pph, h.job_hour, h.pcs FROM task t INNER JOIN job j on t.id = j.task_id INNER JOIN hour_count h ON j.id = h.job_id INNER JOIN employee e on h.employee_id = e.id WHERE t.id='$id' AND t.status='1' AND j.status='1' AND e.id='$employeeId'");
+        $_counts = $con->query("SELECT h.id, j.id AS job_id, j.title, j.pph, h.job_hour, h.pcs FROM task t INNER JOIN job j on t.id = j.task_id INNER JOIN hour_count h ON j.id = h.job_id INNER JOIN employee e on h.employee_id = e.id WHERE t.id='$id' AND t.status='1' AND j.status='1' AND e.id='$employeeId'");
 
         while ($count = $_counts->fetch_assoc()){
             $counts = $count;
